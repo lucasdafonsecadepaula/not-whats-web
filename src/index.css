@@ -1,0 +1,23 @@
+@font-face {
+  font-family: 'Segoe UI';
+  src: url('./assets/fonts/SegoeUI.ttf');
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: rgba(85, 85, 85, 0.3); 
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
