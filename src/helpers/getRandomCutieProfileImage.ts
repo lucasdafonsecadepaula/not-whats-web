@@ -7,7 +7,6 @@ const randomCutieImages = [
   'https://random.dog/bc21dfb7-db3b-4d66-93d8-7bb4809ec1b8.jpg',
   'https://random.dog/1e8ff2fc-6a85-42c4-b9d8-a81bcf36dd98.jpg',
   'https://random.dog/9826-9348-20028.jpg',
-  'https://random.dog/0886de63-9a5d-41c5-b750-4e7633f63ce1.jpg',
   'https://random.dog/fd66efed-7054-4a2a-ae6b-423a52070635.jpg',
   'https://random.dog/c2ef8b9e-4ebe-4148-9684-bfa84111298f.PNG',
   'https://random.dog/8adc2518-3d07-4d05-abf5-7206aba4989c.jpg',

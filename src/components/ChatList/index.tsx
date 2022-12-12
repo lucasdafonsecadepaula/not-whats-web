@@ -1,15 +1,9 @@
-import Message from '@/models/Message';
-import User from '@/models/User';
+import { Chat } from '@/models/Chat';
 import ChatCard from '../ChatCard';
 
 interface ChatListProps {
   hasNotReadMessagesFilter: boolean;
-  usersList: (User & {
-    lastMessage?: Message | null | undefined;
-  } & {
-    peerId?: string | undefined;
-    notificationCount?: number | undefined;
-  })[];
+  usersList: Chat[];
 }
 
 const ChatList = ({ usersList, hasNotReadMessagesFilter }: ChatListProps) => {

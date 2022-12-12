@@ -2,6 +2,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 import { SocketContext } from '@/context/Socket';
 import { ThemeContext } from '@/context/Theme';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useContext, useState } from 'react';
 import Switch from 'react-switch';
 import Avatar from '../Avatar';
@@ -23,26 +24,42 @@ const Perfil = ({ changeLeftSectionType }: CreateNewGroupProps) => {
 
   const handleApplyChangeConfig = () => {
     if (nameInputValue === name || !nameInputValue) return;
-    changeMyConfig({ name: nameInputValue });
+    changeMyConfig({ newConfig: { name: nameInputValue } });
   };
 
-  const hasChangedUserName = nameInputValue !== name;
+  const hasChangedName = nameInputValue !== name;
   return (
     <div className='h-full w-full bg-primaryLightest dark:bg-primaryDark text-white dark:text-[#E9EDEF]'>
-      <div className='h-28 bg-[#008069] dark:bg-[#202C33] flex items-end p-4 gap-4 '>
-        <button onClick={() => changeLeftSectionType()}>
-          <ArrowIcon />
-        </button>
-        <h3 className='text-lg font-bold'>Perfil</h3>
-      </div>
+      <AnimatePresence>
+        <motion.div
+          key='change-profile-title'
+          transition={{ ease: 'easeInOut', duration: 0.5 }}
+          initial={{ x: '-100%', opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          className='h-28 bg-[#008069] dark:bg-[#202C33] flex items-end p-4 gap-4 '
+        >
+          <button onClick={() => changeLeftSectionType()}>
+            <ArrowIcon />
+          </button>
+          <h3 className='text-lg font-bold'>Perfil</h3>
+        </motion.div>
+      </AnimatePresence>
 
       <div className='p-8 w-full grid place-items-center'>
-        <div className='cursor-pointer h-[200px] w-[200px] relative overflow-hidden rounded-full'>
-          <Avatar alt='foto de perfil' size={200} src={profileImage} />
-          <div className='absolute top-0 bottom-0 left-0 right-0 bg-[#707F87]/80 grid place-content-center'>
-            Editar foto de perfil
-          </div>
-        </div>
+        <AnimatePresence>
+          <motion.div
+            key='change-profile-avatar'
+            transition={{ ease: 'easeInOut', duration: 0.5 }}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className='cursor-pointer h-[200px] w-[200px] relative overflow-hidden rounded-full'
+          >
+            <Avatar alt='foto de perfil' size={200} src={profileImage} />
+            <div className='absolute top-0 bottom-0 left-0 right-0 bg-[#707F87]/80 grid place-content-center'>
+              Editar foto de perfil
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <div className='w-full p-8 bg-white dark:bg-primaryDark  shadow-sm relative'>
@@ -62,7 +79,7 @@ const Perfil = ({ changeLeftSectionType }: CreateNewGroupProps) => {
             if (e.key === 'Enter') handleApplyChangeConfig();
           }}
         />
-        {hasChangedUserName ? (
+        {hasChangedName ? (
           <span
             onClick={handleApplyChangeConfig}
             className='absolute top-[50%] right-10 cursor-pointer text-primary'

@@ -1,34 +1,26 @@
-import { getRandomCutieProfileImage } from '@/helpers/getRandomCutieProfileImage';
+import initialData from '@/helpers/initialData';
+import { ChatWithOnlyUserType } from '@/models/Chat';
 import { Room } from '@/models/Room';
-import User from '@/models/User';
-import usersReducer from '@/reducers/usersReducer';
+import chatsReducer from '@/reducers/chatsReducer';
 import { socket } from '@/services/socket';
-import { faker } from '@faker-js/faker';
 import Peer from 'peerjs';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
-const userName = localStorage.getItem('userName') || faker.name.fullName();
-const profileImage = localStorage.getItem('profileImage') || getRandomCutieProfileImage();
-const sessionId = localStorage.getItem('sessionId');
-localStorage.setItem('userName', userName);
-localStorage.setItem('profileImage', profileImage);
+const { name, profileImage, sessionId } = initialData();
+
+type MyDataProps = { id: string; name: string; profileImage: string };
 
 const useSocket = () => {
-  const [myData, setMyData] = useState<User>({
-    id: sessionId || '',
-    name: userName,
-    profileImage,
-  });
+  const [myData, setMyData] = useState<MyDataProps>({ id: sessionId, name, profileImage });
   const [room, setRoom] = useState<Room>(null);
   const mySessionInstance = useRef(sessionId);
-  const roomIdInstance = useRef(null as string | null);
-  const peerInstance = useRef<any>(null);
+  const roomIdInstance = useRef<string | null>(null);
+  const peerInstance = useRef<Peer | null>(null);
 
-  const [users, dispatch] = useReducer(usersReducer, new Map());
+  const [chats, dispatchChats] = useReducer(chatsReducer, new Map());
 
   useEffect(() => {
-    socket.auth = { userName, sessionId };
-    socket.io.opts.query = { profileImage };
+    socket.auth = { name, sessionId, profileImage };
     socket.connect();
 
     const peer = new Peer();
@@ -37,113 +29,125 @@ const useSocket = () => {
       socket.emit('config:set-my-peer', { peerId });
     });
 
-    // peer.on('call', (call) => {
-    //   handleReceiveCall(call);
-    //   navigator.mediaDevices
-    //     .getUserMedia({ audio: true, video: true })
-    //     .then((mediaStream) => {
-    //       currentUserAudioRef.current.srcObject = mediaStream;
-    //       currentUserAudioRef.current.play();
-    //       call.answer(mediaStream);
-    //       call.on('stream', function (remoteStream) {
-    //         remoteUserAudioRef.current.srcObject = remoteStream;
-    //         remoteUserAudioRef.current.play();
-    //       });
-    //     })
-    //     .catch((err) => alert(JSON.stringify(err)));
-    // });
-
     socket.on('init:session', ({ sessionId }) => {
       setMyData((pre) => ({ ...pre, id: sessionId }));
       mySessionInstance.current = sessionId;
       localStorage.setItem('sessionId', sessionId);
     });
 
-    socket.on('user:all-users', ({ allUsers }) => {
-      dispatch({ type: 'SET-ALL-USERS', payload: allUsers });
+    socket.on('chat:all-chats', ({ allChats }) => {
+      dispatchChats({ type: 'SET-ALL-CHATS', payload: allChats });
     });
 
-    socket.on('user:new-user-connected', ({ newUser }) => {
-      dispatch({ type: 'ADD-NEW-USER', payload: newUser });
+    socket.on('chat:new-chat', ({ newChat }) => {
+      dispatchChats({ type: 'ADD-NEW-CHAT', payload: newChat });
     });
 
-    socket.on('user:user-disconnected', ({ user }) => {
-      dispatch({ type: 'REMOVE-USER', payload: user });
+    socket.on('chat:remove-chat', ({ chat }) => {
+      if (roomIdInstance.current === chat.id) setRoom(null);
+      dispatchChats({ type: 'REMOVE-CHAT', payload: chat });
     });
 
-    socket.on('config:user', ({ user }) => {
-      dispatch({ type: 'UPDATE-USER-CONFIG', payload: user });
+    socket.on('config:chat', ({ chat }) => {
+      dispatchChats({ type: 'UPDATE-CHAT-CONFIG', payload: chat });
     });
 
-    socket.on('config:new-peer', ({ userPeer: { id, peerId } }) => {
-      dispatch({ type: 'SET-USER-PEER-ID', payload: { userId: id, peerId } });
+    socket.on('config:new-peer', ({ chatPeer: { id, peerId } }) => {
+      dispatchChats({ type: 'SET-CHAT-PEER-ID', payload: { chatId: id, peerId } });
     });
 
-    socket.on('message:history-by-user', ({ messages }) => {
+    socket.on('message:history-by-chat', ({ messages }) => {
       setRoom((pre) => {
         if (!pre) return null;
         return { ...pre, messages: messages };
       });
     });
 
-    socket.on('message:receive', ({ newMessage }) => {
-      console.count('notification');
-      socket.emit('message:receive-check', { message: newMessage });
-      const userId =
-        mySessionInstance.current === newMessage.from.id ? newMessage.to.id : newMessage.from.id;
+    socket.on('message:receive', ({ newMessage, chatId: messageChatId }) => {
+      const isAGroupMessage = mySessionInstance.current !== messageChatId;
+      const chatId = isAGroupMessage ? messageChatId : newMessage.from.id;
+      const isThisRoomOpen = roomIdInstance.current === chatId;
 
-      if (roomIdInstance.current === userId) {
-        dispatch({ type: 'ATT-LAST-MESSAGE', payload: { userId, lastMessage: newMessage } });
+      if (isThisRoomOpen) {
         setRoom((prev) => {
           if (!prev) return null;
           return { ...prev, messages: [...prev.messages, newMessage] };
         });
-      } else {
-        dispatch({ type: 'ATT-NOTIFICATION', payload: { userId, lastMessage: newMessage } });
       }
+
+      dispatchChats({
+        type: 'RECEIVE-MESSAGE',
+        payload: { chatId, message: newMessage, isThisRoomOpen },
+      });
+
+      socket.emit('message:receive-check', { message: newMessage, chatId });
     });
 
     return () => {
       socket.off('init:session');
-      socket.off('user:all-users');
-      socket.off('user:new-user-connected');
-      socket.off('user:user-disconnected');
-      socket.off('config:user');
+      socket.off('chat:all-chats');
       socket.off('config:new-peer');
-      socket.off('message:history-by-user');
+      socket.off('message:history-by-chat');
       socket.off('message:receive');
       socket.disconnect();
       peer.destroy();
     };
   }, []);
 
-  const openChat = useCallback(({ id, name }: { id: string; name: string }) => {
-    if (id === null) return;
-    socket.emit('message:history-by-user', { userId: id });
-    setRoom({ id, name, messages: [] });
-    roomIdInstance.current = id;
-    dispatch({ type: 'RESET-NOTIFICATION', payload: { userId: id } });
-  }, []);
-
-  const changeMyConfig = useCallback((newConfig: Omit<Partial<User>, 'id'>) => {
-    if (newConfig.name) localStorage.setItem('userName', newConfig.name);
-    if (newConfig.profileImage) localStorage.setItem('profileImage', newConfig.profileImage);
-    setMyData((prev) => ({ ...prev, ...newConfig }));
-    socket.emit('config:my', { newConfig });
-  }, []);
-
-  const sendMensage = useCallback(
-    ({ text, to }: { text: string; to: { id: string; name: string } }) => {
-      socket.emit('message:send', { message: { to, text } });
+  const openChat = useCallback(
+    ({ id, name, profileImage }: { id: string; name: string; profileImage: string | null }) => {
+      if (id === null) return;
+      socket.emit('message:history-by-chat', { chatId: id });
+      setRoom({ id, name, profileImage, messages: [] });
+      roomIdInstance.current = id;
+      dispatchChats({ type: 'RESET-NOTIFICATION', payload: { userId: id } });
     },
     [],
   );
 
-  const createGroup = useCallback(() => {
-    socket.emit('group:create', { group: { id: '1', profileImage: null, userName: 'TEST' } });
-  }, []);
+  const changeMyConfig = useCallback(
+    ({ newConfig }: { newConfig: { name?: string; profileImage?: string } }) => {
+      if (newConfig.name) localStorage.setItem('name', newConfig.name);
+      if (newConfig.profileImage) localStorage.setItem('profileImage', newConfig.profileImage);
+      setMyData((prev) => ({ ...prev, ...newConfig }));
+      socket.emit('config:my', { newConfig });
+    },
+    [],
+  );
 
-  return { myData, users, room, openChat, sendMensage, changeMyConfig, createGroup };
+  const sendMensage = useCallback(
+    ({ text, to }: { text: string; to: { id: string; name: string } }) => {
+      if (roomIdInstance.current === null) return;
+      const from = { id: myData.id, name: myData.name };
+      socket.emit('message:send', { message: { to, text, from }, chatId: roomIdInstance.current });
+    },
+    [myData],
+  );
+
+  const createGroup = useCallback(
+    ({ groupName, groupUsers }: { groupName: string; groupUsers: ChatWithOnlyUserType[] }) => {
+      socket.emit('group:create', { group: { groupName, groupUsers } });
+    },
+    [],
+  );
+
+  return { myData, chats, room, openChat, sendMensage, changeMyConfig, createGroup } as const;
 };
 
 export default useSocket;
+
+// peer.on('call', (call) => {
+//   handleReceiveCall(call);
+//   navigator.mediaDevices
+//     .getUserMedia({ audio: true, video: true })
+//     .then((mediaStream) => {
+//       currentUserAudioRef.current.srcObject = mediaStream;
+//       currentUserAudioRef.current.play();
+//       call.answer(mediaStream);
+//       call.on('stream', function (remoteStream) {
+//         remoteUserAudioRef.current.srcObject = remoteStream;
+//         remoteUserAudioRef.current.play();
+//       });
+//     })
+//     .catch((err) => alert(JSON.stringify(err)));
+// });

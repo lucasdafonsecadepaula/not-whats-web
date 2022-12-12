@@ -12,27 +12,26 @@ import { useContext, useMemo, useState } from 'react';
 export type leftSectionTypeProps = null | 'newGroup' | 'settings';
 
 const Container = () => {
-  const { users, room } = useContext(SocketContext);
+  const { chats, room } = useContext(SocketContext);
   const [leftSectionType, changeLeftSectionType] = useState<leftSectionTypeProps>(null);
-  const [userNameFilter, setUserNameFilter] = useState('');
+  const [nameFilter, setUserNameFilter] = useState('');
   const [hasNotReadMessagesFilter, setHasNotReadMessagesFilter] = useState(false);
 
-  const usersToShow = useMemo(() => {
-    const usersList = Array.from(users.values());
-    if (userNameFilter === '' && !hasNotReadMessagesFilter) return usersList;
-    if (userNameFilter === '' && hasNotReadMessagesFilter)
-      return usersList.filter(
-        (user) => user && user.notificationCount && user.notificationCount > 0,
+  const chatsToShow = useMemo(() => {
+    const chatsList = [...chats.values()];
+    if (nameFilter === '' && !hasNotReadMessagesFilter) return chatsList;
+    if (nameFilter === '' && hasNotReadMessagesFilter)
+      return chatsList.filter(
+        (chat) => chat && chat.notificationCount && chat.notificationCount > 0,
       );
-    if (userNameFilter !== '' && !hasNotReadMessagesFilter)
-      return usersList.filter((user) =>
-        user.name.toLowerCase().includes(userNameFilter.toLowerCase()),
-      );
-    if (userNameFilter !== '' && hasNotReadMessagesFilter)
-      return usersList
-        .filter((user) => user.name.toLowerCase().includes(userNameFilter.toLowerCase()))
-        .filter((user) => user && user.notificationCount && user.notificationCount > 0);
-  }, [users, userNameFilter, hasNotReadMessagesFilter]);
+    if (nameFilter !== '' && !hasNotReadMessagesFilter)
+      return chatsList.filter((chat) => chat.name.toLowerCase().includes(nameFilter.toLowerCase()));
+    if (nameFilter !== '' && hasNotReadMessagesFilter)
+      return chatsList
+        .filter((chat) => chat.name.toLowerCase().includes(nameFilter.toLowerCase()))
+        .filter((chat) => chat && chat.notificationCount && chat.notificationCount > 0);
+    return chatsList;
+  }, [chats, nameFilter, hasNotReadMessagesFilter]);
 
   const hasChatOpen = !!room;
   return (
@@ -70,10 +69,7 @@ const Container = () => {
           toggleNotReadMessagesFilter={() => setHasNotReadMessagesFilter((prev) => !prev)}
           handleSearchUserInputChange={(e) => setUserNameFilter(e.target.value)}
         />
-        <ChatList
-          usersList={usersToShow || []}
-          hasNotReadMessagesFilter={hasNotReadMessagesFilter}
-        />
+        <ChatList usersList={chatsToShow} hasNotReadMessagesFilter={hasNotReadMessagesFilter} />
       </section>
       <section className='w-full h-full'>{hasChatOpen ? <Chat /> : <NoChatSelected />}</section>
     </div>

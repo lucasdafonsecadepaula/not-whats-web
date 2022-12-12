@@ -18,7 +18,7 @@ const Header = ({ changeLeftSectionType }: HeaderProps) => {
     myData: { name, profileImage },
   } = useContext(SocketContext);
   const { isDarkModeOn } = useContext(ThemeContext);
-
+  const darkMode = isDarkModeOn ? 'dark' : '';
   return (
     <div className='w-full h-14 bg-primaryLightest dark:bg-[#202C33] flex items-center py-3 px-4'>
       <div
@@ -26,7 +26,7 @@ const Header = ({ changeLeftSectionType }: HeaderProps) => {
         onClick={() => changeLeftSectionType('settings')}
       >
         <Avatar alt='avatar' src={profileImage} />
-        <h2 className='ml-4 text-left dark:text-[#E9EDEF]'>{name}</h2>
+        <h2 className='truncate ml-4 text-left dark:text-[#E9EDEF]'>{name}</h2>
       </div>
       <Popover.Root>
         <Popover.Trigger asChild>
@@ -37,28 +37,23 @@ const Header = ({ changeLeftSectionType }: HeaderProps) => {
             <ThreeDots />
           </button>
         </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            sideOffset={5}
-            align={'end'}
-            alignOffset={0}
-            className={'drop-shadow-lg z-20' + isDarkModeOn ? 'dark' : ''}
-          >
+        <Popover.Portal className='rounded-md drop-shadow-lg z-20'>
+          <Popover.Content sideOffset={5} align='end' alignOffset={0} className={darkMode}>
             <motion.div
               key='header'
-              className='bg-white dark:bg-[#202C33] dark:text-[#E9EDEF] flex flex-col gap-2 py-2 rounded-sm text-left min-w-[200px] max-w-[340px] text-black/70'
+              className='bg-white dark:bg-[#202C33] dark:text-[#E9EDEF] flex flex-col gap-2 py-2 rounded-md text-left min-w-[200px] max-w-[340px] text-black/70 drop-shadow-lg'
               initial={{ scale: 0.75, y: -25, x: 25 }}
               animate={{ scale: 1, y: 0, x: 0 }}
               transition={{ duration: 0.3 }}
             >
               <div
-                className='p-2 pl-6 cursor-pointer dark:hover:bg-primaryDark'
+                className='p-2 pl-6 cursor-pointer dark:hover:bg-primaryDark/20 hover:bg-primaryLightest'
                 onClick={() => changeLeftSectionType('newGroup')}
               >
                 Novo Grupo
               </div>
               <div
-                className='p-2 pl-6 cursor-pointer dark:hover:bg-primaryDark'
+                className='p-2 pl-6 cursor-pointer dark:hover:bg-primaryDark/20 hover:bg-primaryLightest'
                 onClick={() => changeLeftSectionType('settings')}
               >
                 Perfil

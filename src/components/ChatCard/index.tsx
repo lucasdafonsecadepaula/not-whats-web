@@ -19,18 +19,22 @@ const ChatCard = ({ id, name, profileImage, lastMessage, notificationCount }: Ch
   const isCurrentRoom = room?.id === id;
   return (
     <div
-      onClick={() => openChat({ id, name })}
-      className={`flex cursor-pointer dark:text-[#E9EDEF] text-black hover:bg-[#202C33] ${
-        isCurrentRoom ? 'bg-[#202C33]' : ''
+      onClick={() => openChat({ id, name, profileImage })}
+      className={`flex cursor-pointer border-b dark:border-b-textGray/60 dark:text-[#E9EDEF] text-black dark:hover:bg-[#202C33] hover:bg-primaryLightest ${
+        isCurrentRoom ? 'dark:bg-[#202C33] bg-primaryLightest' : ''
       }`}
     >
-      <Avatar alt='avatar' src={profileImage} className='w-12 h-12 rounded-full self-center ml-3' />
-      <div className='flex flex-col ml-4 w-full border-b dark:border-b-textGray/60 p-4 pl-0'>
-        <h3>{name}</h3>
-        <p className='text-sm opacity-70'>{lastMessage?.text || 'Envie a sua primeira mensagem'}</p>
+      <div className='self-center border-b-0'>
+        <Avatar alt={name} src={profileImage} className='w-12 h-12 rounded-full ml-3 border-b-0' />
       </div>
-      <div className='text-xs mt-4 mr-4 border-b dark:border-b-textGray/60 flex flex-col'>
-        <div className='opacity-70'>
+      <div className='flex flex-col ml-4  pl-0 p-4'>
+        <h3 className='truncate'>{name}</h3>
+        <p className='text-sm opacity-70 truncate'>
+          {lastMessage?.text || 'Envie a sua primeira mensagem'}
+        </p>
+      </div>
+      <div className='text-xs ml-auto mt-4 mr-4 flex flex-col'>
+        <div className='opacity-70 truncate'>
           {lastMessage?.createdAt &&
             new Date(lastMessage?.createdAt).toLocaleTimeString().slice(0, 5)}
         </div>
